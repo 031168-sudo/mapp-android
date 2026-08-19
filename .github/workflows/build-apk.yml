@@ -1,0 +1,30 @@
+name: Build APK from ZIP
+on:
+  push:
+    paths: ['mapp-project.zip']
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unpack project
+        run: |
+          rm -rf project
+          mkdir project
+          unzip -q mapp-project.zip -d project
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - name: Build debug APK
+        working-directory: project
+        run: gradle assembleDebug --no-daemon
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AlfaSputnik-debug-apk
+          path: project/app/build/outputs/apk/debug/*.apk
