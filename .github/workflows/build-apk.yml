@@ -1,7 +1,7 @@
 name: Build APK from ZIP
 on:
   push:
-    paths: ['mapp-project.zip']
+    paths: ['mapp-project.zip', 'patch_status_native.py']
   workflow_dispatch:
 jobs:
   build:
@@ -13,6 +13,8 @@ jobs:
           rm -rf project
           mkdir project
           unzip -q mapp-project.zip -d project
+      - name: Apply native Status refresh patch
+        run: python3 patch_status_native.py
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
