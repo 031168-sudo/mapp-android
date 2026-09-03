@@ -10,8 +10,7 @@ window.__statusDiagRender=function(){
  if(el) el.textContent="Диагностика: update="+d.updates+" | ответ="+d.responses+" | signalStreams="+d.signals+" | Status="+d.status+" | CID="+d.cid+" | "+d.last;
 };'''
 if "window.__statusDiag=window.__statusDiag||" not in s:
-    if marker not in s: raise SystemExit("diagnostic insertion marker not found")
-    s=s.replace(marker,diag+marker,1)
+    s=diag+s
 
 old='console.log("starting update operation"),getUpdateAsyncOp=server.async({name:"update",data:{nextUserStreamIndex:userStream.nextIdx(),nextSignalStreamsIndexes:_.mapValues(signalStreams,function(e){return e.nextIdx()})},timeout:12e4})'
 new='window.__statusDiag.updates++,window.__statusDiag.last="update "+moment().format("HH:mm:ss"),window.__statusDiagRender(),console.log("starting update operation"),getUpdateAsyncOp=server.async({name:"update",data:{nextUserStreamIndex:userStream.nextIdx(),nextSignalStreamsIndexes:_.mapValues(signalStreams,function(e){return e.nextIdx()})},timeout:12e4})'
