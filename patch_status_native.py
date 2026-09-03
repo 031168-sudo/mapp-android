@@ -10,7 +10,7 @@ code=codes[0]
 s=code.read_text(encoding="utf-8-sig")
 print("DIAG: code.js =", code, "bytes=", len(s))
 
-for term in ["getUpdateAsync=function", "exp.login=function", "userDataUpdatedSubscription", "106:[function", "107:[function", "Status", "server.async({name:"update""]:
+for term in ["getUpdateAsync=function", "exp.login=function", "userDataUpdatedSubscription", "106:[function", "107:[function", "Status", "server.async({name:\"update\"}":
     print("\n=== TERM",term,"===")
     positions=[m.start() for m in re.finditer(re.escape(term),s)]
     print("count",len(positions),"positions",positions[:20])
