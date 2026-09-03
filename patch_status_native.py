@@ -1,19 +1,16 @@
 from pathlib import Path
-import re
 
 p=Path("project/app/src/main/assets/code.js")
 s=p.read_text(encoding="utf-8-sig")
 
-# Global diagnostic state. This does not alter the existing update mechanism.
-marker=';app.production = true;'
+marker=";app.production = true;"
 diag=''';window.__statusDiag=window.__statusDiag||{updates:0,responses:0,signals:0,status:0,last:"",cid:""};
 window.__statusDiagRender=function(){
  var d=window.__statusDiag, el=document.getElementById("statusDiag");
  if(el) el.textContent="Диагностика: update="+d.updates+" | ответ="+d.responses+" | signalStreams="+d.signals+" | Status="+d.status+" | CID="+d.cid+" | "+d.last;
 };'''
 if "window.__statusDiag=window.__statusDiag||" not in s:
-    if marker not in s:
-        raise SystemExit("diagnostic insertion marker not found")
+    if marker not in s: raise SystemExit("diagnostic insertion marker not found")
     s=s.replace(marker,diag+marker,1)
 
 old='console.log("starting update operation"),getUpdateAsyncOp=server.async({name:"update",data:{nextUserStreamIndex:userStream.nextIdx(),nextSignalStreamsIndexes:_.mapValues(signalStreams,function(e){return e.nextIdx()})},timeout:12e4})'
@@ -31,8 +28,8 @@ new='onNewData=function(e){var t=updateUserData(e.userStream),n=pushSignalData(e
 if old not in s: raise SystemExit("onNewData pattern not found")
 s=s.replace(old,new,1)
 
-old='t.setTitle(i.title),t.$root.parents('[data-role="content"]').css("padding","0");'
-new='t.setTitle(i.title),t.$root.parents('[data-role="content"]').css("padding","0"),window.__statusDiag&&(window.__statusDiag.cid=(t.data||{}).cid,window.__statusDiagRender()),t.$root.prepend($("<div id="statusDiag" style="font-size:12px;padding:4px;border:1px solid #999;margin:2px;"></div>")),window.__statusDiagRender();'
+old="t.setTitle(i.title),t.$root.parents('[data-role=\"content\"]').css(\"padding\",\"0\");"
+new="t.setTitle(i.title),t.$root.parents('[data-role=\"content\"]').css(\"padding\",\"0\"),window.__statusDiag&&(window.__statusDiag.cid=(t.data||{}).cid),t.$root.prepend($(\"<div id=\\\"statusDiag\\\" style=\\\"font-size:12px;padding:4px;border:1px solid #999;margin:2px;\\\"></div>\")),window.__statusDiagRender();"
 if old not in s: raise SystemExit("status attach pattern not found")
 s=s.replace(old,new,1)
 
