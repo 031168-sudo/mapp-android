@@ -46,19 +46,12 @@ if 'exp.refresh=function(){if(!savedUsername)' not in s:
     if old not in s: raise SystemExit("source logout pattern not found")
     s=s.replace(old,new,1)
 
-old='var a,s;r.attach=function(){'
-new='var a,s,q;r.attach=function(){'
+# Start a one-minute full-snapshot refresh while the Status page is attached.
+s=e.model.userDataUpdatedSubscription.subscribe(a),t.__statusRefreshTimer=window.setInterval(function(){e.model.refresh&&e.model.refresh()},6e4)
+# Clear that timer when the page is detached.
+old='r.detach=function(){'
+new='r.detach=function(){t.__statusRefreshTimer&&(window.clearInterval(t.__statusRefreshTimer),t.__statusRefreshTimer=null),'
 if old in s: s=s.replace(old,new,1)
-
-old='s=e.model.userDataUpdatedSubscription.subscribe(a),u.enhanceWithin()'
-new='s=e.model.userDataUpdatedSubscription.subscribe(a),q=window.setInterval(function(){e.model.refresh&&e.model.refresh()},6e4),u.enhanceWithin()'
-if old not in s: raise SystemExit("status subscription pattern not found")
-s=s.replace(old,new,1)
-
-old='r.detach=function(){s&&(s.stop(),s=null)}};'
-new='r.detach=function(){s&&(s.stop(),s=null),q&&(window.clearInterval(q),q=null)}};'
-if old not in s: raise SystemExit("status detach pattern not found")
-s=s.replace(old,new,1)
 
 p.write_text(s,encoding="utf-8")
 print("diagnostic patch applied")
