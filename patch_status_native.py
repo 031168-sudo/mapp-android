@@ -4,10 +4,10 @@ p=Path("project/app/src/main/assets/code.js")
 s=p.read_text(encoding="utf-8-sig")
 
 marker=";app.production = true;"
-diag=''';window.__statusDiag=window.__statusDiag||{updates:0,responses:0,signals:0,status:0,last:"",cid:""};
+diag=''';window.__statusDiag=window.__statusDiag||{updates:0,responses:0,signals:0,status:0,refresh:0,refreshResponses:0,last:"",cid:""};
 window.__statusDiagRender=function(){
  var d=window.__statusDiag, el=document.getElementById("statusDiag");
- if(el) el.textContent="Диагностика: update="+d.updates+" | ответ="+d.responses+" | signalStreams="+d.signals+" | Status="+d.status+" | CID="+d.cid+" | "+d.last;
+ if(el) el.textContent="Диагностика: update="+d.updates+" | ответ="+d.responses+" | refresh="+d.refresh+" | refreshОтвет="+d.refreshResponses+" | signalStreams="+d.signals+" | Status="+d.status+" | CID="+d.cid+" | "+d.last;
 };'''
 if "window.__statusDiag=window.__statusDiag||" not in s:
     s=diag+s
@@ -35,6 +35,29 @@ s=s.replace(old,new,1)
 old='a=function(){var e=o.model.getLastSignal(l);t.attachChildView(m,[t.signalView,e])}'
 new='a=function(){var e=o.model.getLastSignal(l);window.__statusDiag.status++,window.__statusDiag.last="Status "+moment().format("HH:mm:ss"),window.__statusDiagRender(),t.attachChildView(m,[t.signalView,e])}'
 if old not in s: raise SystemExit("status callback pattern not found")
+s=s.replace(old,new,1)
+
+
+# Full-snapshot refresh: deliberately reuse the exact login operation that supplies
+# the complete initial dataset, including signalStreams for every device.
+old='exp.logout=function(){sid&&server.async({name:"logout"}),reset()}'
+new='exp.refresh=function(){if(!savedUsername)return null;window.__statusDiag.refresh++,window.__statusDiag.last="refresh "+moment().format("HH:mm:ss"),window.__statusDiagRender();var n={username:savedUsername,password:savedPassword,timezone:moment().utcOffset(),clientVersion:buildVersion};return server.async({name:"login",data:n,validate:function(e){return e&&e.sid&&_.isArray(e.userPrivileges)},timeout:6e4}).done(function(e){runPatches(e.patches||[]),sid=e.sid,userPrivileges=e.userPrivileges,window.__statusDiag.refreshResponses++,window.__statusDiag.last="refresh response "+moment().format("HH:mm:ss"),window.__statusDiagRender(),onNewData(e)})},exp.logout=function(){sid&&server.async({name:"logout"}),reset()}'
+if 'exp.refresh=function(){if(!savedUsername)' not in s:
+    if old not in s: raise SystemExit("source logout pattern not found")
+    s=s.replace(old,new,1)
+
+old='var a,s;r.attach=function(){'
+new='var a,s,q;r.attach=function(){'
+if old in s: s=s.replace(old,new,1)
+
+old='s=e.model.userDataUpdatedSubscription.subscribe(a),u.enhanceWithin()'
+new='s=e.model.userDataUpdatedSubscription.subscribe(a),q=window.setInterval(function(){e.model.refresh&&e.model.refresh()},6e4),u.enhanceWithin()'
+if old not in s: raise SystemExit("status subscription pattern not found")
+s=s.replace(old,new,1)
+
+old='r.detach=function(){s&&(s.stop(),s=null)}};'
+new='r.detach=function(){s&&(s.stop(),s=null),q&&(window.clearInterval(q),q=null)}};'
+if old not in s: raise SystemExit("status detach pattern not found")
 s=s.replace(old,new,1)
 
 p.write_text(s,encoding="utf-8")
