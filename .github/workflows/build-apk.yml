@@ -1,7 +1,7 @@
 name: Build APK from ZIP
 on:
   push:
-    paths: ['mapp-project.zip', 'patch_status_native.py']
+    paths: ['mapp-project.zip', 'patch_status_native.py', 'trigger_status_native.txt']
   workflow_dispatch:
 jobs:
   build:
