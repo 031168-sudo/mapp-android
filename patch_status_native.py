@@ -47,11 +47,15 @@ if 'exp.refresh=function(){if(!savedUsername)' not in s:
     s=s.replace(old,new,1)
 
 # Start a one-minute full-snapshot refresh while the Status page is attached.
-s=e.model.userDataUpdatedSubscription.subscribe(a),t.__statusRefreshTimer=window.setInterval(function(){e.model.refresh&&e.model.refresh()},6e4)
-# Clear that timer when the page is detached.
+old='s=e.model.userDataUpdatedSubscription.subscribe(a)'
+new='s=e.model.userDataUpdatedSubscription.subscribe(a),t.__statusRefreshTimer=window.setInterval(function(){e.model.refresh&&e.model.refresh()},6e4)'
+if old not in s: raise SystemExit("status subscription source pattern not found")
+s=s.replace(old,new,1)
+
 old='r.detach=function(){'
 new='r.detach=function(){t.__statusRefreshTimer&&(window.clearInterval(t.__statusRefreshTimer),t.__statusRefreshTimer=null),'
-if old in s: s=s.replace(old,new,1)
+if old not in s: raise SystemExit("detach source pattern not found")
+s=s.replace(old,new,1)
 
 p.write_text(s,encoding="utf-8")
 print("diagnostic patch applied")
