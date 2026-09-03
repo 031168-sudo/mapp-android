@@ -47,11 +47,6 @@ if 'exp.refresh=function(){if(!savedUsername)' not in s:
     s=s.replace(old,new,1)
 
 # Start a one-minute full-snapshot refresh while the Status page is attached.
-old='s=e.model.userDataUpdatedSubscription.subscribe(a)'
-new='s=e.model.userDataUpdatedSubscription.subscribe(a),t.__statusRefreshTimer=window.setInterval(function(){e.model.refresh&&e.model.refresh()},6e4)'
-if old not in s: raise SystemExit("status subscription source pattern not found")
-s=s.replace(old,new,1)
-
 old='s=e.model.userDataUpdatedSubscription.subscribe(a),u.enhanceWithin()'
 new='s=e.model.userDataUpdatedSubscription.subscribe(a),t.__statusRefreshTimer=window.setInterval(function(){e.model.refresh&&e.model.refresh()},6e4),u.enhanceWithin()'
 if old not in s: raise SystemExit("status subscription source pattern not found")
