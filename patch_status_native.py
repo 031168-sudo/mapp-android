@@ -52,9 +52,14 @@ new='s=e.model.userDataUpdatedSubscription.subscribe(a),t.__statusRefreshTimer=w
 if old not in s: raise SystemExit("status subscription source pattern not found")
 s=s.replace(old,new,1)
 
-old='r.detach=function(){'
-new='r.detach=function(){t.__statusRefreshTimer&&(window.clearInterval(t.__statusRefreshTimer),t.__statusRefreshTimer=null),'
-if old not in s: raise SystemExit("detach source pattern not found")
+old='s=e.model.userDataUpdatedSubscription.subscribe(a),u.enhanceWithin()'
+new='s=e.model.userDataUpdatedSubscription.subscribe(a),t.__statusRefreshTimer=window.setInterval(function(){e.model.refresh&&e.model.refresh()},6e4),u.enhanceWithin()'
+if old not in s: raise SystemExit("status subscription source pattern not found")
+s=s.replace(old,new,1)
+
+old='},r.detach=function(){s&&(s.stop(),s=null)}};return t.mlr={title:{en:"Status",ru:"Статус"}'
+new='},r.detach=function(){t.__statusRefreshTimer&&(window.clearInterval(t.__statusRefreshTimer),t.__statusRefreshTimer=null),s&&(s.stop(),s=null)}};return t.mlr={title:{en:"Status",ru:"Статус"}'
+if old not in s: raise SystemExit("exact status detach pattern not found")
 s=s.replace(old,new,1)
 
 p.write_text(s,encoding="utf-8")
