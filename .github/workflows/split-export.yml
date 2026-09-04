@@ -1,0 +1,21 @@
+name: Split APK export
+on:
+  push:
+    branches: [ build-clean-from-working-apk ]
+permissions:
+  contents: write
+jobs:
+  split:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Split
+        run: |
+          rm -rf build-export/chunks
+          mkdir -p build-export/chunks
+          split -b 50000 build-export/app-debug.apk.b64 build-export/chunks/part-
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add build-export/chunks
+          git commit -m "Split APK export into readable chunks" || true
+          git push
