@@ -27,4 +27,16 @@ if old4 not in s:
     raise SystemExit('values format not found')
 s = s.replace(old4, new4, 1)
 
+old5 = 'private boolean isXiaomi(byte[] d){if(d==null||d.length<18)return false;'
+new5 = 'private boolean isXiaomi(byte[] d){if(d==null||d.length<15)return false;'
+if old5 not in s:
+    raise SystemExit('xiaomi length check not found')
+s = s.replace(old5, new5, 1)
+
+old6 = 't=tr/256f;h=hr/256f;String embedded=String.format(Locale.US,"%02X:%02X:%02X:%02X:%02X:%02X",data[12]&255,data[11]&255,data[10]&255,data[9]&255,data[8]&255,data[7]&255);'
+new6 = 't=tr/256f;h=hr/256f;battery=data[2]&255;String embedded=String.format(Locale.US,"%02X:%02X:%02X:%02X:%02X:%02X",data[12]&255,data[11]&255,data[10]&255,data[9]&255,data[8]&255,data[7]&255);'
+if old6 not in s:
+    raise SystemExit('minew measurement block not found')
+s = s.replace(old6, new6, 1)
+
 p.write_text(s, encoding='utf-8')
