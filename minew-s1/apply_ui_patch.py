@@ -39,4 +39,22 @@ if old6 not in s:
     raise SystemExit('minew measurement block not found')
 s = s.replace(old6, new6, 1)
 
+old7 = 'TextView title=text("График: "+name,21);title.setTypeface(Typeface.DEFAULT,Typeface.BOLD);top.addView(title,new LinearLayout.LayoutParams(0,dp(52),1));'
+new7 = 'TextView title=text(name,18);title.setTypeface(Typeface.DEFAULT,Typeface.BOLD);title.setSingleLine(true);title.setEllipsize(android.text.TextUtils.TruncateAt.END);top.addView(title,new LinearLayout.LayoutParams(0,dp(52),1));'
+if old7 not in s:
+    raise SystemExit('history title block not found')
+s = s.replace(old7, new7, 1)
+
+old8 = 'LinearLayout tabs=new LinearLayout(this);tabs.setGravity(Gravity.CENTER);dayButton=button("День");monthButton=button("Месяц");yearButton=button("Год");tabs.addView(dayButton,new LinearLayout.LayoutParams(0,dp(48),1));tabs.addView(monthButton,new LinearLayout.LayoutParams(0,dp(48),1));tabs.addView(yearButton,new LinearLayout.LayoutParams(0,dp(48),1));dayButton.setOnClickListener(v->{historyPeriod=0;refreshHistory();});monthButton.setOnClickListener(v->{historyPeriod=1;refreshHistory();});yearButton.setOnClickListener(v->{historyPeriod=2;refreshHistory();});root.addView(tabs,new LinearLayout.LayoutParams(-1,dp(54)));\n        historyGraph=new GraphView(this);historyGraph.setDeviceId(historyDeviceId);root.addView(historyGraph,new LinearLayout.LayoutParams(-1,0,1));LinearLayout nav=new LinearLayout(this);nav.setGravity(Gravity.CENTER_VERTICAL);nav.setBackground(card(Color.WHITE));Button prev=button("◀"),next=button("▶");historyDateLabel=text("",19);nav.addView(prev,new LinearLayout.LayoutParams(dp(58),dp(58)));nav.addView(historyDateLabel,new LinearLayout.LayoutParams(0,dp(58),1));nav.addView(next,new LinearLayout.LayoutParams(dp(58),dp(58)));LinearLayout.LayoutParams np=new LinearLayout.LayoutParams(-1,dp(66));np.topMargin=dp(8);root.addView(nav,np);prev.setOnClickListener(v->{historyDate.add(historyPeriod==0?java.util.Calendar.DAY_OF_MONTH:historyPeriod==1?java.util.Calendar.MONTH:java.util.Calendar.YEAR,-1);refreshHistory();});next.setOnClickListener(v->{historyDate.add(historyPeriod==0?java.util.Calendar.DAY_OF_MONTH:historyPeriod==1?java.util.Calendar.MONTH:java.util.Calendar.YEAR,1);refreshHistory();});setContentView(root);refreshHistory();'
+new8 = 'LinearLayout tabs=new LinearLayout(this);tabs.setGravity(Gravity.CENTER);dayButton=button("День");monthButton=button("Месяц");yearButton=button("Год");tabs.addView(dayButton,new LinearLayout.LayoutParams(0,dp(48),1));tabs.addView(monthButton,new LinearLayout.LayoutParams(0,dp(48),1));tabs.addView(yearButton,new LinearLayout.LayoutParams(0,dp(48),1));dayButton.setOnClickListener(v->{historyPeriod=0;refreshHistory();});monthButton.setOnClickListener(v->{historyPeriod=1;refreshHistory();});yearButton.setOnClickListener(v->{historyPeriod=2;refreshHistory();});root.addView(tabs,new LinearLayout.LayoutParams(-1,dp(54)));\n        historyGraph=new GraphView(this);historyGraph.setDeviceId(historyDeviceId);root.addView(historyGraph,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);refreshHistory();'
+if old8 not in s:
+    raise SystemExit('duplicate history nav block not found')
+s = s.replace(old8, new8, 1)
+
+old9 = 'title=title.substring(0,1).toUpperCase(Locale.getDefault())+title.substring(1);historyDateLabel.setText(title);List<HistoryDb.Reading> data=db.range(historyDeviceId,start.getTimeInMillis(),end.getTimeInMillis());'
+new9 = 'title=title.substring(0,1).toUpperCase(Locale.getDefault())+title.substring(1);List<HistoryDb.Reading> data=db.range(historyDeviceId,start.getTimeInMillis(),end.getTimeInMillis());'
+if old9 not in s:
+    raise SystemExit('history date label update not found')
+s = s.replace(old9, new9, 1)
+
 p.write_text(s, encoding='utf-8')
