@@ -111,7 +111,6 @@ public class GraphView extends View {
     private void drawChart(Canvas c,float cl,float ct,float cr,float cb,String title,boolean tempChart) {
         round(c,cl,ct,cr,cb,0xffffffff,18);
         txt(c,title,cl+16,ct+28,19,tempChart?0xff159b83:0xff3b78b5);
-        // Keep the chart compact; scale points by their real timestamps, not by point count.
         float l=cl+18,r=cr-58,t=ct+48,b=cb-34;
         if(data==null||data.size()<1){txt(c,"Нет данных за выбранный период",l,t+30,16,0xff888890);return;}
         float min=Float.MAX_VALUE,max=-Float.MAX_VALUE;
@@ -137,9 +136,9 @@ public class GraphView extends View {
         p.setStyle(Paint.Style.FILL);p.setColor(tempChart?0x2632bea5:0x264b8fd1);Path fill=new Path(path);fill.lineTo(l+(r-l)*Math.max(0f,Math.min(1f,(data.get(data.size()-1).ts-from)/span)),b);fill.lineTo(l+(r-l)*Math.max(0f,Math.min(1f,(data.get(0).ts-from)/span)),b);fill.close();c.drawPath(fill,p);
         p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(3.2f);p.setColor(line);c.drawPath(path,p);
         HistoryDb.Reading last=data.get(data.size()-1);float lv=tempChart?last.temp:last.hum;float lastX=l+(r-l)*Math.max(0f,Math.min(1f,(last.ts-from)/span));float ly=b-(lv-min)/(max-min)*(b-t);
-        p.setStyle(Paint.Style.FILL);p.setColor(0xffffffff);c.drawCircle(lastX,ly,6,p);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(2.5f);p.setColor(line);c.drawCircle(lastX,ly,6,p);
+        p.setStyle(Paint.Style.FILL);p.setColor(0xffffffff);c.drawCircle(lastX,ly,7,p);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(3);p.setColor(line);c.drawCircle(lastX,ly,7,p);
         String value=tempChart?String.format(Locale.getDefault(),"%.2f °C",last.temp):String.format(Locale.getDefault(),"%.1f %%",last.hum);
-        p.setStyle(Paint.Style.FILL);p.setTextSize(14);float bw=p.measureText(value)+22;float bx=Math.max(l,Math.min(r-bw,lastX-bw/2));float by=Math.max(ct+34,Math.min(cb-40,ly-38));round(c,bx,by,bx+bw,by+32,line,12);txt(c,value,bx+11,by+21,14,0xffffffff);
+        p.setStyle(Paint.Style.FILL);p.setTextSize(56);float bw=p.measureText(value)+34;float bx=Math.max(l,Math.min(r-bw,lastX-bw/2));float by=Math.max(ct+38,Math.min(cb-86,ly-70));round(c,bx,by,bx+bw,by+76,line,14);txt(c,value,bx+17,by+57,56,0xffffffff);
         float axisSize=45;
         if(period==0){txt(c,"00:00",l,b+25,axisSize,0xff77777f);txt(c,"12:00",(l+r)/2-27,b+25,axisSize,0xff77777f);txt(c,"24:00",r-45,b+25,axisSize,0xff77777f);}
         else if(period==1){txt(c,"1",l,b+25,axisSize,0xff77777f);txt(c,"15",(l+r)/2-13,b+25,axisSize,0xff77777f);txt(c,"31",r-28,b+25,axisSize,0xff77777f);}
