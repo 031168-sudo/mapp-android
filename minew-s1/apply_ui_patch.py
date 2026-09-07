@@ -15,4 +15,16 @@ if old2 not in s:
     raise SystemExit('device info block not found')
 s = s.replace(old2, new2, 1)
 
+old3 = 'TextView values=text("—.— °C    —.— % RH",31);'
+new3 = 'TextView values=text("—.— °C    —.— %",31);'
+if old3 not in s:
+    raise SystemExit('values placeholder not found')
+s = s.replace(old3, new3, 1)
+
+old4 = 'String.format(Locale.US,"%.2f °C    %.1f %% RH",s.t,s.h)'
+new4 = 'String.format(Locale.US,"%.2f °C    %.1f %%",s.t,s.h)'
+if old4 not in s:
+    raise SystemExit('values format not found')
+s = s.replace(old4, new4, 1)
+
 p.write_text(s, encoding='utf-8')
