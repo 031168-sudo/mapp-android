@@ -25,6 +25,9 @@ jobs:
       - name: Fix history panels
         working-directory: minew-s1
         run: python3 fix_history_panels.py
+      - name: Fix graph typography
+        working-directory: minew-s1
+        run: python3 fix_graph_typography.py
       - name: Build debug APK
         working-directory: minew-s1
         run: gradle assembleDebug --no-daemon
