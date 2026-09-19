@@ -21,15 +21,6 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10.2'
-      - name: Apply UI patch
-        working-directory: minew-s1
-        run: python3 apply_ui_patch.py
-      - name: Fix history panels
-        working-directory: minew-s1
-        run: python3 fix_history_panels.py
-      - name: Fix graph typography
-        working-directory: minew-s1
-        run: python3 fix_graph_typography.py
       - name: Build debug APK
         working-directory: minew-s1
         run: gradle assembleDebug --no-daemon
