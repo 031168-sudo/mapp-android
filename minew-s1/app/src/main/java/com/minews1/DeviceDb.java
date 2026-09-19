@@ -26,6 +26,7 @@ public class DeviceDb {
     }
     public void ensureMinew(){
         if(find("78:05:41:06:91:BA")==null)add("78:05:41:06:91:BA","Minew S1","minew");
+        if(find("78:05:41:01:E6:36")==null)add("78:05:41:01:E6:36","Minew WTS300","minew_wts300");
     }
     public Device find(String id){for(Device d:all())if(d.id.equalsIgnoreCase(id))return d;return null;}
     public void add(String id,String name,String type){
