@@ -4,6 +4,7 @@ import android.Manifest
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.BluetoothLeScanner
 import android.bluetooth.le.ScanCallback
+import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Context
@@ -238,8 +239,8 @@ class MainActivity : ComponentActivity() {
             override fun onScanFailed(errorCode: Int) { main.post { mainStatus = "Ошибка BLE-сканирования: $errorCode" } }
         }
         try {
-            sc.startScan(null, ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).setReportDelay(0).build(), callback)
-            mainStatus = "Скан запущен, ждём пакеты…"
+            sc.startScan(scanFilters(), ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).setReportDelay(0).build(), callback)
+            mainStatus = "Скан запущен (с фильтром по UUID), ждём пакеты…"
             debugScanCount = 0
             macCounts.clear()
             debugMacList = ""
@@ -247,6 +248,12 @@ class MainActivity : ComponentActivity() {
             mainStatus = "Нет разрешения Bluetooth"
         }
     }
+
+    private fun scanFilters(): List<ScanFilter> = listOf(
+        ScanFilter.Builder().setServiceUuid(Ble.MINEW_UUID).build(),
+        ScanFilter.Builder().setServiceUuid(Ble.XIAOMI_UUID).build(),
+        ScanFilter.Builder().setServiceUuid(Ble.EDDYSTONE_UUID).build(),
+    )
 
     private fun stopScan() {
         val sc = scanner
