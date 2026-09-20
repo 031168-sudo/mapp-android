@@ -58,6 +58,7 @@ fun MainScreen(
     debugLast: String = "",
     debugTlm: String = "",
     debugPerms: String = "",
+    debugScanCount: Int = 0,
     onOpenDevices: () -> Unit,
     onOpenHistory: (DeviceDb.Device) -> Unit,
 ) {
@@ -93,6 +94,11 @@ fun MainScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            Text(
+                "debug onScanResult calls: $debugScanCount",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             if (debugLast.isNotBlank()) {
                 Text(
                     "debug last: $debugLast",

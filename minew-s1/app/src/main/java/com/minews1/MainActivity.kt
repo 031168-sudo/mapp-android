@@ -56,6 +56,7 @@ class MainActivity : ComponentActivity() {
     private var debugEddystone by mutableStateOf("")
     private var debugEddystoneTlm by mutableStateOf("")
     private var debugPerms by mutableStateOf("")
+    private var debugScanCount by mutableStateOf(0)
     private var foundDevices by mutableStateOf(listOf<Ble.Found>())
     private var deviceScanStatus by mutableStateOf("Готово к сканированию")
     private var deviceScanActive by mutableStateOf(false)
@@ -85,6 +86,7 @@ class MainActivity : ComponentActivity() {
                             debugLast = debugEddystone,
                             debugTlm = debugEddystoneTlm,
                             debugPerms = debugPerms,
+                            debugScanCount = debugScanCount,
                             onOpenDevices = ::goDevices,
                             onOpenHistory = { d -> goHistory(d.id, d.name) },
                         )
@@ -214,12 +216,16 @@ class MainActivity : ComponentActivity() {
         if (sc == null) { mainStatus = "BLE недоступен"; return }
         scanner = sc
         callback = object : ScanCallback() {
-            override fun onScanResult(callbackType: Int, result: ScanResult) { parseMeasurement(result) }
+            override fun onScanResult(callbackType: Int, result: ScanResult) {
+                main.post { debugScanCount++ }
+                parseMeasurement(result)
+            }
             override fun onScanFailed(errorCode: Int) { main.post { mainStatus = "Ошибка BLE-сканирования: $errorCode" } }
         }
         try {
             sc.startScan(null, ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).setReportDelay(0).build(), callback)
             mainStatus = "Скан запущен, ждём пакеты…"
+            debugScanCount = 0
         } catch (e: SecurityException) {
             mainStatus = "Нет разрешения Bluetooth"
         }
