@@ -60,6 +60,7 @@ fun MainScreen(
     debugPerms: String = "",
     debugScanCount: Int = 0,
     debugWtsRaw: String = "",
+    debugMacList: String = "",
     onOpenDevices: () -> Unit,
     onOpenHistory: (DeviceDb.Device) -> Unit,
 ) {
@@ -105,6 +106,13 @@ fun MainScreen(
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (debugMacList.isNotBlank()) {
+                Text(
+                    "debug top MACs: $debugMacList",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             if (debugLast.isNotBlank()) {
                 Text(
                     "debug last: $debugLast",

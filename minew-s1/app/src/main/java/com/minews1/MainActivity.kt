@@ -48,6 +48,7 @@ class MainActivity : ComponentActivity() {
     private var scanner: BluetoothLeScanner? = null
     private var callback: ScanCallback? = null
     private var screenIsHistory = false
+    private val macCounts = LinkedHashMap<String, Int>()
 
     private var screen: Screen by mutableStateOf(Screen.Main)
     private var devices by mutableStateOf(listOf<DeviceDb.Device>())
@@ -58,6 +59,7 @@ class MainActivity : ComponentActivity() {
     private var debugPerms by mutableStateOf("")
     private var debugScanCount by mutableStateOf(0)
     private var debugWtsRaw by mutableStateOf("")
+    private var debugMacList by mutableStateOf("")
     private var foundDevices by mutableStateOf(listOf<Ble.Found>())
     private var deviceScanStatus by mutableStateOf("Готово к сканированию")
     private var deviceScanActive by mutableStateOf(false)
@@ -89,6 +91,7 @@ class MainActivity : ComponentActivity() {
                             debugPerms = debugPerms,
                             debugScanCount = debugScanCount,
                             debugWtsRaw = debugWtsRaw,
+                            debugMacList = debugMacList,
                             onOpenDevices = ::goDevices,
                             onOpenHistory = { d -> goHistory(d.id, d.name) },
                         )
@@ -219,7 +222,17 @@ class MainActivity : ComponentActivity() {
         scanner = sc
         callback = object : ScanCallback() {
             override fun onScanResult(callbackType: Int, result: ScanResult) {
-                main.post { debugScanCount++ }
+                val mac = try { result.device.address } catch (e: SecurityException) { null }
+                main.post {
+                    debugScanCount++
+                    if (mac != null) {
+                        macCounts[mac] = (macCounts[mac] ?: 0) + 1
+                        if (debugScanCount % 10 == 0) {
+                            debugMacList = macCounts.entries.sortedByDescending { it.value }.take(12)
+                                .joinToString(" | ") { "${it.key}=${it.value}" }
+                        }
+                    }
+                }
                 parseMeasurement(result)
             }
             override fun onScanFailed(errorCode: Int) { main.post { mainStatus = "Ошибка BLE-сканирования: $errorCode" } }
@@ -228,6 +241,8 @@ class MainActivity : ComponentActivity() {
             sc.startScan(null, ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).setReportDelay(0).build(), callback)
             mainStatus = "Скан запущен, ждём пакеты…"
             debugScanCount = 0
+            macCounts.clear()
+            debugMacList = ""
         } catch (e: SecurityException) {
             mainStatus = "Нет разрешения Bluetooth"
         }
