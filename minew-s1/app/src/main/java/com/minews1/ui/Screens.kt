@@ -57,6 +57,7 @@ fun MainScreen(
     statusText: String,
     debugLast: String = "",
     debugTlm: String = "",
+    debugPerms: String = "",
     onOpenDevices: () -> Unit,
     onOpenHistory: (DeviceDb.Device) -> Unit,
 ) {
@@ -85,6 +86,13 @@ fun MainScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(vertical = 10.dp),
             )
+            if (debugPerms.isNotBlank()) {
+                Text(
+                    "debug perms: $debugPerms",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             if (debugLast.isNotBlank()) {
                 Text(
                     "debug last: $debugLast",

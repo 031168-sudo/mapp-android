@@ -55,11 +55,13 @@ class MainActivity : ComponentActivity() {
     private var mainStatus by mutableStateOf("Поиск датчиков…")
     private var debugEddystone by mutableStateOf("")
     private var debugEddystoneTlm by mutableStateOf("")
+    private var debugPerms by mutableStateOf("")
     private var foundDevices by mutableStateOf(listOf<Ble.Found>())
     private var deviceScanStatus by mutableStateOf("Готово к сканированию")
     private var deviceScanActive by mutableStateOf(false)
 
     private val permissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        debugPerms = permissionDebugLine()
         if (!needPermissions()) startMonitoring() else mainStatus = "Разрешение Bluetooth не выдано"
     }
 
@@ -70,6 +72,7 @@ class MainActivity : ComponentActivity() {
         deviceDb = DeviceDb(this)
         deviceDb.ensureMinew()
         refreshDevices()
+        debugPerms = permissionDebugLine()
 
         setContent {
             MinewTheme {
@@ -81,6 +84,7 @@ class MainActivity : ComponentActivity() {
                             statusText = mainStatus,
                             debugLast = debugEddystone,
                             debugTlm = debugEddystoneTlm,
+                            debugPerms = debugPerms,
                             onOpenDevices = ::goDevices,
                             onOpenHistory = { d -> goHistory(d.id, d.name) },
                         )
@@ -114,7 +118,7 @@ class MainActivity : ComponentActivity() {
         }
 
         if (needPermissions()) {
-            permissionLauncher.launch(arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT))
+            permissionLauncher.launch(requiredPermissions())
         } else {
             startMonitoring()
         }
@@ -128,15 +132,36 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        debugPerms = permissionDebugLine()
         if (!screenIsHistory && !needPermissions()) {
             main.postDelayed({ if (!screenIsHistory) startMonitoring() }, 150)
         }
     }
 
+    private fun requiredPermissions(): Array<String> =
+        if (Build.VERSION.SDK_INT >= 31) {
+            arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
+        } else {
+            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+
     private fun needPermissions(): Boolean =
-        Build.VERSION.SDK_INT >= 31 &&
-            (checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED ||
-                checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED)
+        if (Build.VERSION.SDK_INT >= 31) {
+            checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED ||
+                checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED
+        } else {
+            checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+        }
+
+    private fun permissionDebugLine(): String {
+        val sdk = Build.VERSION.SDK_INT
+        val scan = checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED
+        val connect = checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
+        val location = checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        val bm = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+        val btOn = bm.adapter?.isEnabled == true
+        return "SDK=$sdk scan=$scan connect=$connect location=$location btOn=$btOn need=${needPermissions()}"
+    }
 
     private fun refreshDevices() {
         devices = deviceDb.all()
@@ -179,7 +204,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun startScan() {
-        if (screenIsHistory || needPermissions()) return
+        debugPerms = permissionDebugLine()
+        if (screenIsHistory) { mainStatus = "Скан отложен (экран истории)"; return }
+        if (needPermissions()) { mainStatus = "Скан не запущен: нет разрешения (${permissionDebugLine()})"; return }
         val bm = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         val adapter = bm.adapter
         if (adapter == null || !adapter.isEnabled) { mainStatus = "Включите Bluetooth"; return }
@@ -192,6 +219,7 @@ class MainActivity : ComponentActivity() {
         }
         try {
             sc.startScan(null, ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).setReportDelay(0).build(), callback)
+            mainStatus = "Скан запущен, ждём пакеты…"
         } catch (e: SecurityException) {
             mainStatus = "Нет разрешения Bluetooth"
         }
