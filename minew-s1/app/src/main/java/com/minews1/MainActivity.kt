@@ -53,6 +53,8 @@ class MainActivity : ComponentActivity() {
     private var devices by mutableStateOf(listOf<DeviceDb.Device>())
     private var sensorStates by mutableStateOf(mapOf<String, SensorState>())
     private var mainStatus by mutableStateOf("Поиск датчиков…")
+    private var debugEddystone by mutableStateOf("")
+    private var debugEddystoneTlm by mutableStateOf("")
     private var foundDevices by mutableStateOf(listOf<Ble.Found>())
     private var deviceScanStatus by mutableStateOf("Готово к сканированию")
     private var deviceScanActive by mutableStateOf(false)
@@ -77,6 +79,8 @@ class MainActivity : ComponentActivity() {
                             devices = devices,
                             sensorStates = sensorStates,
                             statusText = mainStatus,
+                            debugLast = debugEddystone,
+                            debugTlm = debugEddystoneTlm,
                             onOpenDevices = ::goDevices,
                             onOpenHistory = { d -> goHistory(d.id, d.name) },
                         )
@@ -249,6 +253,15 @@ class MainActivity : ComponentActivity() {
         val xdata = record.getServiceData(Ble.XIAOMI_UUID)
         val mdata = record.getServiceData(Ble.MINEW_UUID)
         val edata = record.getServiceData(Ble.EDDYSTONE_UUID)
+        if (edata != null) {
+            val hex = edata.joinToString(" ") { String.format(Locale.US, "%02X", it.toInt() and 0xFF) }
+            val isTlm = edata.isNotEmpty() && Ble.u(edata, 0) == 0x20
+            val line = "${if (isTlm) "TLM" else "FEAA"} [$scanMac] len=${edata.size}: $hex"
+            main.post {
+                debugEddystone = line
+                if (isTlm) debugEddystoneTlm = line
+            }
+        }
         if (edata != null && edata.size >= 6 && Ble.u(edata, 0) == 0x20) {
             val wd = deviceDb.find(Ble.WTS300_MAC)
             if (wd != null && wd.type == "minew_wts300") d = wd
