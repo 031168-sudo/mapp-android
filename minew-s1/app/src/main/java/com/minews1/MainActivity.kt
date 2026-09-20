@@ -57,6 +57,7 @@ class MainActivity : ComponentActivity() {
     private var debugEddystoneTlm by mutableStateOf("")
     private var debugPerms by mutableStateOf("")
     private var debugScanCount by mutableStateOf(0)
+    private var debugWtsRaw by mutableStateOf("")
     private var foundDevices by mutableStateOf(listOf<Ble.Found>())
     private var deviceScanStatus by mutableStateOf("Готово к сканированию")
     private var deviceScanActive by mutableStateOf(false)
@@ -87,6 +88,7 @@ class MainActivity : ComponentActivity() {
                             debugTlm = debugEddystoneTlm,
                             debugPerms = debugPerms,
                             debugScanCount = debugScanCount,
+                            debugWtsRaw = debugWtsRaw,
                             onOpenDevices = ::goDevices,
                             onOpenHistory = { d -> goHistory(d.id, d.name) },
                         )
@@ -283,6 +285,13 @@ class MainActivity : ComponentActivity() {
         val record = r.scanRecord ?: return
         val scanMac: String? = try { r.device.address } catch (e: SecurityException) { null }
         if (scanMac == null) return
+        if (scanMac.equals(Ble.WTS300_MAC, ignoreCase = true)) {
+            val raw = record.bytes
+            val rawHex = raw?.joinToString(" ") { String.format(Locale.US, "%02X", it.toInt() and 0xFF) } ?: "null"
+            val uuids = record.serviceUuids?.joinToString(",") { it.toString() } ?: "none"
+            val line = "WTS300 seen! len=${raw?.size ?: 0} uuids=[$uuids] raw: $rawHex"
+            main.post { debugWtsRaw = line }
+        }
         var d = deviceDb.find(scanMac)
         val xdata = record.getServiceData(Ble.XIAOMI_UUID)
         val mdata = record.getServiceData(Ble.MINEW_UUID)

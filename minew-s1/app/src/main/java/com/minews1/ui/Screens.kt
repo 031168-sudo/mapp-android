@@ -59,6 +59,7 @@ fun MainScreen(
     debugTlm: String = "",
     debugPerms: String = "",
     debugScanCount: Int = 0,
+    debugWtsRaw: String = "",
     onOpenDevices: () -> Unit,
     onOpenHistory: (DeviceDb.Device) -> Unit,
 ) {
@@ -96,6 +97,11 @@ fun MainScreen(
             }
             Text(
                 "debug onScanResult calls: $debugScanCount",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                if (debugWtsRaw.isBlank()) "debug WTS300 raw: not seen yet" else "debug WTS300 raw: $debugWtsRaw",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
