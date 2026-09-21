@@ -238,8 +238,18 @@ class MainActivity : ComponentActivity() {
             override fun onScanFailed(errorCode: Int) { main.post { mainStatus = "Ошибка BLE-сканирования: $errorCode" } }
         }
         try {
-            sc.startScan(null, ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).setReportDelay(0).build(), callback)
-            mainStatus = "Скан запущен, ждём пакеты…"
+            val settings = ScanSettings.Builder()
+                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+                .setReportDelay(0)
+                .apply {
+                    if (Build.VERSION.SDK_INT >= 26) {
+                        setLegacy(false)
+                        setPhy(ScanSettings.PHY_LE_ALL_SUPPORTED)
+                    }
+                }
+                .build()
+            sc.startScan(null, settings, callback)
+            mainStatus = "Скан запущен (legacy=false), ждём пакеты…"
             debugScanCount = 0
             macCounts.clear()
             debugMacList = ""
