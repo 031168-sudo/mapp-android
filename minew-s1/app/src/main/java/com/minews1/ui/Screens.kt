@@ -10,15 +10,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material3.Button
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -41,7 +38,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.minews1.Ble
 import com.minews1.DeviceDb
 import com.minews1.HistoryDb
 import com.minews1.SensorState
@@ -54,8 +50,7 @@ import java.util.Locale
 fun MainScreen(
     devices: List<DeviceDb.Device>,
     sensorStates: Map<String, SensorState>,
-    statusText: String,
-    onOpenDevices: () -> Unit,
+    errorText: String,
     onOpenHistory: (DeviceDb.Device) -> Unit,
 ) {
     Scaffold(topBar = { TopAppBar(title = { Text("Температура и влажность") }) }) { padding ->
@@ -66,23 +61,19 @@ fun MainScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
             )
+            if (errorText.isNotBlank()) {
+                Text(
+                    errorText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(bottom = 12.dp),
+                )
+            }
             LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(devices, key = { it.id }) { device ->
                     DeviceCard(device = device, state = sensorStates[device.id], onClick = { onOpenHistory(device) })
                 }
             }
-            Spacer(Modifier.height(12.dp))
-            Button(onClick = onOpenDevices, modifier = Modifier.fillMaxWidth().height(52.dp)) {
-                Icon(Icons.Filled.Add, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text("Устройства")
-            }
-            Text(
-                statusText,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(vertical = 10.dp),
-            )
         }
     }
 }
@@ -120,73 +111,6 @@ private fun StatValue(label: String, value: String) {
     Column {
         Text(value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}
-
-@Composable
-fun DevicesScreen(
-    found: List<Ble.Found>,
-    status: String,
-    scanning: Boolean,
-    isAdded: (String) -> Boolean,
-    onBack: () -> Unit,
-    onScan: () -> Unit,
-    onAdd: (Ble.Found) -> Unit,
-) {
-    var addedLocally by remember { mutableStateOf(setOf<String>()) }
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Добавление устройства") },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, contentDescription = "Назад") } },
-            )
-        },
-    ) { padding ->
-        Column(Modifier.padding(padding).fillMaxSize().padding(horizontal = 16.dp)) {
-            Text(
-                "Нажмите «Сканировать». Приложение покажет найденные BLE-датчики. Выберите устройство и добавьте его.",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(vertical = 12.dp),
-            )
-            Button(onClick = onScan, enabled = !scanning, modifier = Modifier.fillMaxWidth().height(52.dp)) {
-                Text(if (scanning) "Сканирование…" else "Сканировать BLE")
-            }
-            Text(
-                status,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(vertical = 8.dp),
-            )
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                items(found, key = { it.mac }) { f ->
-                    val added = isAdded(f.mac) || f.mac in addedLocally
-                    FoundDeviceRow(found = f, added = added, onAdd = { onAdd(f); addedLocally = addedLocally + f.mac })
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun FoundDeviceRow(found: Ble.Found, added: Boolean, onAdd: () -> Unit) {
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp)) {
-            Text(found.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            Text(
-                if (found.type == "xiaomi") "Xiaomi LYWSDCGQ/01ZM" else "Minew BLE sensor",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                "${found.mac}   ${found.rssi} dBm",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(8.dp))
-            Button(onClick = onAdd, enabled = !added, modifier = Modifier.fillMaxWidth()) {
-                Text(if (added) "Добавлено" else "Добавить")
-            }
-        }
     }
 }
 

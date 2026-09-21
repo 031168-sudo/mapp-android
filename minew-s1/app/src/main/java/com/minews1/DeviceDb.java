@@ -12,6 +12,8 @@ public class DeviceDb {
         public String id, name, type;
         public Device(String i, String n, String t){id=i;name=n;type=t;}
     }
+    // Derived from the advertisement payload by Ble.xiaomiMac(), not the radio address.
+    private static final String XIAOMI_MAC = "6B:95:30:34:2D:58";
     private final SharedPreferences prefs;
     public DeviceDb(Context c){prefs=c.getSharedPreferences("devices",Context.MODE_PRIVATE);}
     public List<Device> all(){
@@ -24,9 +26,17 @@ public class DeviceDb {
         }catch(Exception ignored){}
         return out;
     }
-    public void ensureMinew(){
+    public void ensureDevices(){
         if(find("78:05:41:06:91:BA")==null)add("78:05:41:06:91:BA","Minew S1","minew");
         if(find("78:05:41:01:E6:36")==null)add("78:05:41:01:E6:36","Minew WTS300","minew_wts300");
+        if(find(XIAOMI_MAC)==null)add(XIAOMI_MAC,"Xiaomi LYWSDCGQ/01ZM","xiaomi");
+    }
+    public void removeUnlisted(){
+        for(Device d:all()){
+            if(!d.id.equalsIgnoreCase("78:05:41:06:91:BA")
+                    &&!d.id.equalsIgnoreCase("78:05:41:01:E6:36")
+                    &&!d.id.equalsIgnoreCase(XIAOMI_MAC)) remove(d.id);
+        }
     }
     public Device find(String id){for(Device d:all())if(d.id.equalsIgnoreCase(id))return d;return null;}
     public void add(String id,String name,String type){

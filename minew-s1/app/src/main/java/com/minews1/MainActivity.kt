@@ -22,7 +22,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.minews1.ui.DevicesScreen
 import com.minews1.ui.HistoryScreen
 import com.minews1.ui.MainScreen
 import com.minews1.ui.theme.MinewTheme
@@ -37,7 +36,6 @@ data class SensorState(
 
 private sealed class Screen {
     data object Main : Screen()
-    data object Devices : Screen()
     data class History(val deviceId: String, val deviceName: String) : Screen()
 }
 
@@ -52,13 +50,12 @@ class MainActivity : ComponentActivity() {
     private var screen: Screen by mutableStateOf(Screen.Main)
     private var devices by mutableStateOf(listOf<DeviceDb.Device>())
     private var sensorStates by mutableStateOf(mapOf<String, SensorState>())
-    private var mainStatus by mutableStateOf("Поиск датчиков…")
-    private var foundDevices by mutableStateOf(listOf<Ble.Found>())
-    private var deviceScanStatus by mutableStateOf("Готово к сканированию")
-    private var deviceScanActive by mutableStateOf(false)
+
+    // Shown only when something blocks scanning; blank while everything works.
+    private var errorText by mutableStateOf("")
 
     private val permissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-        if (!needPermissions()) startMonitoring() else mainStatus = "Нет разрешения на Bluetooth и геолокацию"
+        if (!needPermissions()) startMonitoring() else errorText = "Нет разрешения на Bluetooth и геолокацию"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,7 +63,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         db = HistoryDb(this)
         deviceDb = DeviceDb(this)
-        deviceDb.ensureMinew()
+        deviceDb.ensureDevices()
+        deviceDb.removeUnlisted()
         refreshDevices()
 
         setContent {
@@ -76,25 +74,9 @@ class MainActivity : ComponentActivity() {
                         is Screen.Main -> MainScreen(
                             devices = devices,
                             sensorStates = sensorStates,
-                            statusText = mainStatus,
-                            onOpenDevices = ::goDevices,
+                            errorText = errorText,
                             onOpenHistory = { d -> goHistory(d.id, d.name) },
                         )
-                        is Screen.Devices -> {
-                            BackHandler(onBack = ::goMain)
-                            DevicesScreen(
-                                found = foundDevices,
-                                status = deviceScanStatus,
-                                scanning = deviceScanActive,
-                                isAdded = { mac -> deviceDb.find(mac) != null },
-                                onBack = ::goMain,
-                                onScan = ::startDeviceScan,
-                                onAdd = { f ->
-                                    deviceDb.add(f.mac, if (f.type == "xiaomi") "Xiaomi LYWSDCGQ/01ZM" else f.name, f.type)
-                                    refreshDevices()
-                                },
-                            )
-                        }
                         is Screen.History -> {
                             BackHandler(onBack = ::goMain)
                             HistoryScreen(
@@ -160,16 +142,6 @@ class MainActivity : ComponentActivity() {
         startMonitoring()
     }
 
-    private fun goDevices() {
-        screenIsHistory = true
-        stopScan()
-        main.removeCallbacksAndMessages(null)
-        foundDevices = emptyList()
-        deviceScanStatus = "Готово к сканированию"
-        deviceScanActive = false
-        screen = Screen.Devices
-    }
-
     private fun goHistory(deviceId: String, name: String) {
         screenIsHistory = true
         stopScan()
@@ -192,16 +164,16 @@ class MainActivity : ComponentActivity() {
 
     private fun startScan() {
         if (screenIsHistory) return
-        if (needPermissions()) { mainStatus = "Нет разрешения на Bluetooth и геолокацию"; return }
+        if (needPermissions()) { errorText = "Нет разрешения на Bluetooth и геолокацию"; return }
         val bm = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         val adapter = bm.adapter
-        if (adapter == null || !adapter.isEnabled) { mainStatus = "Включите Bluetooth"; return }
+        if (adapter == null || !adapter.isEnabled) { errorText = "Включите Bluetooth"; return }
         val sc = adapter.bluetoothLeScanner
-        if (sc == null) { mainStatus = "BLE недоступен"; return }
+        if (sc == null) { errorText = "BLE недоступен"; return }
         scanner = sc
         callback = object : ScanCallback() {
             override fun onScanResult(callbackType: Int, result: ScanResult) { parseMeasurement(result) }
-            override fun onScanFailed(errorCode: Int) { main.post { mainStatus = "Ошибка BLE-сканирования: $errorCode" } }
+            override fun onScanFailed(errorCode: Int) { main.post { errorText = "Ошибка BLE-сканирования: $errorCode" } }
         }
         try {
             val settings = ScanSettings.Builder()
@@ -215,9 +187,9 @@ class MainActivity : ComponentActivity() {
                 }
                 .build()
             sc.startScan(null, settings, callback)
-            mainStatus = "Поиск датчиков…"
+            errorText = ""
         } catch (e: SecurityException) {
-            mainStatus = "Нет разрешения Bluetooth"
+            errorText = "Нет разрешения Bluetooth"
         }
     }
 
@@ -228,45 +200,6 @@ class MainActivity : ComponentActivity() {
             try { sc.stopScan(cb) } catch (e: SecurityException) { /* no-op */ }
             callback = null
         }
-    }
-
-    private fun startDeviceScan() {
-        if (needPermissions()) { deviceScanStatus = "Нет разрешения Bluetooth"; return }
-        val bm = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-        val adapter = bm.adapter
-        if (adapter == null || !adapter.isEnabled) { deviceScanStatus = "Включите Bluetooth"; return }
-        val sc = adapter.bluetoothLeScanner
-        if (sc == null) { deviceScanStatus = "BLE недоступен"; return }
-        scanner = sc
-        val found = LinkedHashMap<String, Ble.Found>()
-        foundDevices = emptyList()
-        deviceScanStatus = "Сканирование…"
-        deviceScanActive = true
-        callback = object : ScanCallback() {
-            override fun onScanResult(callbackType: Int, result: ScanResult) {
-                val f = Ble.identify(result) ?: return
-                val old = found[f.mac]
-                if (old == null || f.rssi > old.rssi) {
-                    found[f.mac] = f
-                    main.post { foundDevices = found.values.toList() }
-                }
-            }
-            override fun onScanFailed(errorCode: Int) {
-                main.post { deviceScanStatus = "Ошибка BLE-сканирования: $errorCode" }
-            }
-        }
-        try {
-            sc.startScan(null, ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).setReportDelay(0).build(), callback)
-        } catch (e: SecurityException) {
-            deviceScanStatus = "Нет разрешения Bluetooth"
-            deviceScanActive = false
-            return
-        }
-        main.postDelayed({
-            stopScan()
-            deviceScanActive = false
-            deviceScanStatus = "Найдено устройств: ${foundDevices.size}"
-        }, 10000)
     }
 
     private fun parseMeasurement(r: ScanResult) {
@@ -357,6 +290,6 @@ class MainActivity : ComponentActivity() {
         )
         sensorStates = sensorStates + (id to next)
         if (!next.t.isNaN() && !next.h.isNaN()) db.add(id, next.last, next.t, next.h)
-        mainStatus = "●  BLE-сканирование активно"
+        errorText = ""
     }
 }
