@@ -48,25 +48,17 @@ class MainActivity : ComponentActivity() {
     private var scanner: BluetoothLeScanner? = null
     private var callback: ScanCallback? = null
     private var screenIsHistory = false
-    private val macCounts = LinkedHashMap<String, Int>()
 
     private var screen: Screen by mutableStateOf(Screen.Main)
     private var devices by mutableStateOf(listOf<DeviceDb.Device>())
     private var sensorStates by mutableStateOf(mapOf<String, SensorState>())
     private var mainStatus by mutableStateOf("Поиск датчиков…")
-    private var debugEddystone by mutableStateOf("")
-    private var debugEddystoneTlm by mutableStateOf("")
-    private var debugPerms by mutableStateOf("")
-    private var debugScanCount by mutableStateOf(0)
-    private var debugWtsRaw by mutableStateOf("")
-    private var debugMacList by mutableStateOf("")
     private var foundDevices by mutableStateOf(listOf<Ble.Found>())
     private var deviceScanStatus by mutableStateOf("Готово к сканированию")
     private var deviceScanActive by mutableStateOf(false)
 
     private val permissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-        debugPerms = permissionDebugLine()
-        if (!needPermissions()) startMonitoring() else mainStatus = "Разрешение Bluetooth не выдано"
+        if (!needPermissions()) startMonitoring() else mainStatus = "Нет разрешения на Bluetooth и геолокацию"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -76,7 +68,6 @@ class MainActivity : ComponentActivity() {
         deviceDb = DeviceDb(this)
         deviceDb.ensureMinew()
         refreshDevices()
-        debugPerms = permissionDebugLine()
 
         setContent {
             MinewTheme {
@@ -86,12 +77,6 @@ class MainActivity : ComponentActivity() {
                             devices = devices,
                             sensorStates = sensorStates,
                             statusText = mainStatus,
-                            debugLast = debugEddystone,
-                            debugTlm = debugEddystoneTlm,
-                            debugPerms = debugPerms,
-                            debugScanCount = debugScanCount,
-                            debugWtsRaw = debugWtsRaw,
-                            debugMacList = debugMacList,
                             onOpenDevices = ::goDevices,
                             onOpenHistory = { d -> goHistory(d.id, d.name) },
                         )
@@ -139,7 +124,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        debugPerms = permissionDebugLine()
         if (!screenIsHistory && !needPermissions()) {
             main.postDelayed({ if (!screenIsHistory) startMonitoring() }, 150)
         }
@@ -164,16 +148,6 @@ class MainActivity : ComponentActivity() {
         return Build.VERSION.SDK_INT >= 31 &&
             (checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED ||
                 checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED)
-    }
-
-    private fun permissionDebugLine(): String {
-        val sdk = Build.VERSION.SDK_INT
-        val scan = checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED
-        val connect = checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
-        val location = checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-        val bm = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-        val btOn = bm.adapter?.isEnabled == true
-        return "SDK=$sdk scan=$scan connect=$connect location=$location btOn=$btOn need=${needPermissions()}"
     }
 
     private fun refreshDevices() {
@@ -217,9 +191,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun startScan() {
-        debugPerms = permissionDebugLine()
-        if (screenIsHistory) { mainStatus = "Скан отложен (экран истории)"; return }
-        if (needPermissions()) { mainStatus = "Скан не запущен: нет разрешения (${permissionDebugLine()})"; return }
+        if (screenIsHistory) return
+        if (needPermissions()) { mainStatus = "Нет разрешения на Bluetooth и геолокацию"; return }
         val bm = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         val adapter = bm.adapter
         if (adapter == null || !adapter.isEnabled) { mainStatus = "Включите Bluetooth"; return }
@@ -227,34 +200,7 @@ class MainActivity : ComponentActivity() {
         if (sc == null) { mainStatus = "BLE недоступен"; return }
         scanner = sc
         callback = object : ScanCallback() {
-            override fun onScanResult(callbackType: Int, result: ScanResult) {
-                val mac = try { result.device.address } catch (e: SecurityException) { null }
-                val isTarget = mac != null && (mac.equals(Ble.WTS300_MAC, ignoreCase = true) || mac.equals(Ble.MINEW_MAC, ignoreCase = true))
-                val targetLine = if (isTarget) {
-                    val rec = result.scanRecord
-                    if (rec == null) {
-                        "TARGET HIT mac=$mac scanRecord=NULL"
-                    } else {
-                        val raw = rec.bytes
-                        val rawHex = raw?.joinToString(" ") { String.format(Locale.US, "%02X", it.toInt() and 0xFF) } ?: "null"
-                        val uuids = rec.serviceUuids?.joinToString(",") { it.toString() } ?: "none"
-                        "TARGET HIT mac=$mac len=${raw?.size ?: 0} uuids=[$uuids] raw: $rawHex"
-                    }
-                } else null
-                main.post {
-                    debugScanCount++
-                    if (mac != null) {
-                        macCounts[mac] = (macCounts[mac] ?: 0) + 1
-                        if (debugScanCount % 10 == 0) {
-                            debugMacList = "total distinct=${macCounts.size} | " +
-                                macCounts.entries.sortedByDescending { it.value }.take(10)
-                                    .joinToString(" | ") { "${it.key}=${it.value}" }
-                        }
-                    }
-                    if (targetLine != null) debugWtsRaw = targetLine
-                }
-                parseMeasurement(result)
-            }
+            override fun onScanResult(callbackType: Int, result: ScanResult) { parseMeasurement(result) }
             override fun onScanFailed(errorCode: Int) { main.post { mainStatus = "Ошибка BLE-сканирования: $errorCode" } }
         }
         try {
@@ -269,10 +215,7 @@ class MainActivity : ComponentActivity() {
                 }
                 .build()
             sc.startScan(null, settings, callback)
-            mainStatus = "Скан запущен (legacy=false), ждём пакеты…"
-            debugScanCount = 0
-            macCounts.clear()
-            debugMacList = ""
+            mainStatus = "Поиск датчиков…"
         } catch (e: SecurityException) {
             mainStatus = "Нет разрешения Bluetooth"
         }
@@ -334,15 +277,6 @@ class MainActivity : ComponentActivity() {
         val xdata = record.getServiceData(Ble.XIAOMI_UUID)
         val mdata = record.getServiceData(Ble.MINEW_UUID)
         val edata = record.getServiceData(Ble.EDDYSTONE_UUID)
-        if (edata != null) {
-            val hex = edata.joinToString(" ") { String.format(Locale.US, "%02X", it.toInt() and 0xFF) }
-            val isTlm = edata.isNotEmpty() && Ble.u(edata, 0) == 0x20
-            val line = "${if (isTlm) "TLM" else "FEAA"} [$scanMac] len=${edata.size}: $hex"
-            main.post {
-                debugEddystone = line
-                if (isTlm) debugEddystoneTlm = line
-            }
-        }
         if (edata != null && edata.size >= 6 && Ble.u(edata, 0) == 0x20) {
             val wd = deviceDb.find(Ble.WTS300_MAC)
             if (wd != null && wd.type == "minew_wts300") d = wd

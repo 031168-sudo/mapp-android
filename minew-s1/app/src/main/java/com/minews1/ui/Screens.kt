@@ -55,12 +55,6 @@ fun MainScreen(
     devices: List<DeviceDb.Device>,
     sensorStates: Map<String, SensorState>,
     statusText: String,
-    debugLast: String = "",
-    debugTlm: String = "",
-    debugPerms: String = "",
-    debugScanCount: Int = 0,
-    debugWtsRaw: String = "",
-    debugMacList: String = "",
     onOpenDevices: () -> Unit,
     onOpenHistory: (DeviceDb.Device) -> Unit,
 ) {
@@ -89,45 +83,6 @@ fun MainScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(vertical = 10.dp),
             )
-            if (debugPerms.isNotBlank()) {
-                Text(
-                    "debug perms: $debugPerms",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Text(
-                "debug onScanResult calls: $debugScanCount",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                if (debugWtsRaw.isBlank()) "debug target raw: not seen yet" else "debug target raw: $debugWtsRaw",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            if (debugMacList.isNotBlank()) {
-                Text(
-                    "debug top MACs: $debugMacList",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            if (debugLast.isNotBlank()) {
-                Text(
-                    "debug last: $debugLast",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            if (debugTlm.isNotBlank()) {
-                Text(
-                    "debug tlm: $debugTlm",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 8.dp),
-                )
-            }
         }
     }
 }
