@@ -147,18 +147,24 @@ class MainActivity : ComponentActivity() {
 
     private fun requiredPermissions(): Array<String> =
         if (Build.VERSION.SDK_INT >= 31) {
-            arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
+            arrayOf(
+                Manifest.permission.BLUETOOTH_SCAN,
+                Manifest.permission.BLUETOOTH_CONNECT,
+                Manifest.permission.ACCESS_FINE_LOCATION,
+            )
         } else {
             arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
         }
 
-    private fun needPermissions(): Boolean =
-        if (Build.VERSION.SDK_INT >= 31) {
-            checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED ||
-                checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED
-        } else {
-            checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-        }
+    // Location is required on every version: without it the manifest would need
+    // neverForLocation on BLUETOOTH_SCAN, and that flag makes Android strip
+    // beacon-format advertisements (Eddystone/iBeacon) out of scan results.
+    private fun needPermissions(): Boolean {
+        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) return true
+        return Build.VERSION.SDK_INT >= 31 &&
+            (checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED ||
+                checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED)
+    }
 
     private fun permissionDebugLine(): String {
         val sdk = Build.VERSION.SDK_INT
