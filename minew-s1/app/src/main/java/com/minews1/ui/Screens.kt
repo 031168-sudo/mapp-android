@@ -102,7 +102,7 @@ fun MainScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                if (debugWtsRaw.isBlank()) "debug WTS300 raw: not seen yet" else "debug WTS300 raw: $debugWtsRaw",
+                if (debugWtsRaw.isBlank()) "debug target raw: not seen yet" else "debug target raw: $debugWtsRaw",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

@@ -223,15 +223,29 @@ class MainActivity : ComponentActivity() {
         callback = object : ScanCallback() {
             override fun onScanResult(callbackType: Int, result: ScanResult) {
                 val mac = try { result.device.address } catch (e: SecurityException) { null }
+                val isTarget = mac != null && (mac.equals(Ble.WTS300_MAC, ignoreCase = true) || mac.equals(Ble.MINEW_MAC, ignoreCase = true))
+                val targetLine = if (isTarget) {
+                    val rec = result.scanRecord
+                    if (rec == null) {
+                        "TARGET HIT mac=$mac scanRecord=NULL"
+                    } else {
+                        val raw = rec.bytes
+                        val rawHex = raw?.joinToString(" ") { String.format(Locale.US, "%02X", it.toInt() and 0xFF) } ?: "null"
+                        val uuids = rec.serviceUuids?.joinToString(",") { it.toString() } ?: "none"
+                        "TARGET HIT mac=$mac len=${raw?.size ?: 0} uuids=[$uuids] raw: $rawHex"
+                    }
+                } else null
                 main.post {
                     debugScanCount++
                     if (mac != null) {
                         macCounts[mac] = (macCounts[mac] ?: 0) + 1
                         if (debugScanCount % 10 == 0) {
-                            debugMacList = macCounts.entries.sortedByDescending { it.value }.take(12)
-                                .joinToString(" | ") { "${it.key}=${it.value}" }
+                            debugMacList = "total distinct=${macCounts.size} | " +
+                                macCounts.entries.sortedByDescending { it.value }.take(10)
+                                    .joinToString(" | ") { "${it.key}=${it.value}" }
                         }
                     }
+                    if (targetLine != null) debugWtsRaw = targetLine
                 }
                 parseMeasurement(result)
             }
@@ -310,13 +324,6 @@ class MainActivity : ComponentActivity() {
         val record = r.scanRecord ?: return
         val scanMac: String? = try { r.device.address } catch (e: SecurityException) { null }
         if (scanMac == null) return
-        if (scanMac.equals(Ble.WTS300_MAC, ignoreCase = true)) {
-            val raw = record.bytes
-            val rawHex = raw?.joinToString(" ") { String.format(Locale.US, "%02X", it.toInt() and 0xFF) } ?: "null"
-            val uuids = record.serviceUuids?.joinToString(",") { it.toString() } ?: "none"
-            val line = "WTS300 seen! len=${raw?.size ?: 0} uuids=[$uuids] raw: $rawHex"
-            main.post { debugWtsRaw = line }
-        }
         var d = deviceDb.find(scanMac)
         val xdata = record.getServiceData(Ble.XIAOMI_UUID)
         val mdata = record.getServiceData(Ble.MINEW_UUID)
