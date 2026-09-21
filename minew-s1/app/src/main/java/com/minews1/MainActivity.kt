@@ -31,6 +31,8 @@ data class SensorState(
     val t: Float = Float.NaN,
     val h: Float = Float.NaN,
     val battery: Int = -1,
+    // Eddystone TLM reports a raw cell voltage rather than a charge percentage.
+    val batteryMv: Int = -1,
     val last: Long = 0L,
 )
 
@@ -231,6 +233,7 @@ class MainActivity : ComponentActivity() {
         var t = Float.NaN
         var h = Float.NaN
         var battery = -1
+        var batteryMv = -1
 
         when (d.type) {
             "minew" -> {
@@ -267,6 +270,7 @@ class MainActivity : ComponentActivity() {
             }
             "minew_wts300" -> {
                 if (edata == null || edata.size < 6 || Ble.u(edata, 0) != 0x20) return
+                batteryMv = (Ble.u(edata, 2) shl 8) or Ble.u(edata, 3)
                 val tr = ((Ble.u(edata, 4) shl 8) or Ble.u(edata, 5)).toShort()
                 t = tr / 256f
             }
@@ -277,19 +281,21 @@ class MainActivity : ComponentActivity() {
         val ft = t
         val fh = h
         val fb = battery
-        main.post { updateSensor(id, ft, fh, fb) }
+        val fmv = batteryMv
+        main.post { updateSensor(id, ft, fh, fb, fmv) }
     }
 
-    private fun updateSensor(id: String, t: Float, h: Float, battery: Int) {
+    private fun updateSensor(id: String, t: Float, h: Float, battery: Int, batteryMv: Int) {
         val prev = sensorStates[id] ?: SensorState()
         val next = SensorState(
             t = if (!t.isNaN()) t else prev.t,
             h = if (!h.isNaN()) h else prev.h,
             battery = if (battery >= 0) battery else prev.battery,
+            batteryMv = if (batteryMv >= 0) batteryMv else prev.batteryMv,
             last = System.currentTimeMillis(),
         )
         sensorStates = sensorStates + (id to next)
-        if (!next.t.isNaN() && !next.h.isNaN()) db.add(id, next.last, next.t, next.h)
+        if (!next.t.isNaN() || !next.h.isNaN()) db.add(id, next.last, next.t, next.h)
         errorText = ""
     }
 }

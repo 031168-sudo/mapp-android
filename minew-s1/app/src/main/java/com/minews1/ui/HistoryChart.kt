@@ -61,11 +61,13 @@ private fun ChartPanel(
     axisFormat: (Float) -> String,
     modifier: Modifier = Modifier,
 ) {
+    // A temperature-only sensor stores no humidity, so each panel plots only the rows it has a value for.
+    val points = readings.filter { !valueOf(it).isNaN() }
     ElevatedCard(modifier = modifier) {
         Column(Modifier.fillMaxSize().padding(12.dp)) {
             Text(title, style = MaterialTheme.typography.titleSmall, color = lineColor)
             Box(Modifier.weight(1f).fillMaxSize()) {
-                if (readings.isEmpty()) {
+                if (points.isEmpty()) {
                     Text(
                         "Нет данных за выбранный период",
                         style = MaterialTheme.typography.bodySmall,
@@ -77,7 +79,7 @@ private fun ChartPanel(
                     val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
                     val fillColor = lineColor.copy(alpha = 0.15f)
                     Canvas(Modifier.fillMaxSize()) {
-                        val values = readings.map(valueOf)
+                        val values = points.map(valueOf)
                         var min = values.min()
                         var max = values.max()
                         val pad = (max - min).let { if (it <= 0f) 1f else it * 0.15f }
@@ -108,7 +110,7 @@ private fun ChartPanel(
 
                         val path = Path()
                         val fillPath = Path()
-                        readings.forEachIndexed { index, reading ->
+                        points.forEachIndexed { index, reading ->
                             val x = xOf(reading.ts)
                             val y = yOf(valueOf(reading))
                             if (index == 0) {
@@ -119,13 +121,13 @@ private fun ChartPanel(
                                 fillPath.lineTo(x, y)
                             }
                         }
-                        fillPath.lineTo(xOf(readings.last().ts), b)
-                        fillPath.lineTo(xOf(readings.first().ts), b)
+                        fillPath.lineTo(xOf(points.last().ts), b)
+                        fillPath.lineTo(xOf(points.first().ts), b)
                         fillPath.close()
                         drawPath(fillPath, color = fillColor, style = Fill)
                         drawPath(path, color = lineColor, style = Stroke(width = 3.dp.toPx()))
 
-                        val last = readings.last()
+                        val last = points.last()
                         val lx = xOf(last.ts)
                         val ly = yOf(valueOf(last))
                         drawCircle(Color.White, radius = 6.dp.toPx(), center = Offset(lx, ly))
