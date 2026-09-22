@@ -99,12 +99,7 @@ private fun DeviceCard(device: DeviceDb.Device, state: SensorState?, onClick: ()
             val statusColor = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
             val statusLine = if (active && state != null) {
                 val time = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date(state.last))
-                val power = when {
-                    state.battery >= 0 -> "  •  ${state.battery}%"
-                    state.batteryMv >= 0 -> "  •  ${state.batteryMv} мВ"
-                    else -> ""
-                }
-                "●  BLE • $time$power"
+                "●  BLE • $time" + if (state.battery >= 0) "  •  ${state.battery}%" else ""
             } else "Ожидание данных"
             Text(statusLine, style = MaterialTheme.typography.labelMedium, color = statusColor)
         }
