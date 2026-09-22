@@ -53,7 +53,7 @@ fun MainScreen(
     errorText: String,
     onOpenHistory: (DeviceDb.Device) -> Unit,
 ) {
-    Scaffold(topBar = { TopAppBar(title = { Text("Температура и влажность") }) }) { padding ->
+    Scaffold(topBar = { TopAppBar(title = { Text("T&H BLE") }) }) { padding ->
         Column(Modifier.padding(padding).fillMaxSize().padding(horizontal = 16.dp)) {
             Text(
                 "BLE-мониторинг датчиков",
