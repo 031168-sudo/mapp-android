@@ -28,6 +28,7 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,10 +42,14 @@ import androidx.compose.ui.unit.dp
 import com.minews1.DeviceDb
 import com.minews1.HistoryDb
 import com.minews1.SensorState
+import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+
+// A sensor silent for this long is treated as gone, not as still reading its last value.
+private const val StaleAfterMs = 2 * 60 * 1000L
 
 @Composable
 fun MainScreen(
@@ -53,6 +58,14 @@ fun MainScreen(
     errorText: String,
     onOpenHistory: (DeviceDb.Device) -> Unit,
 ) {
+    // Drives the staleness check, so a sensor that stops broadcasting clears itself.
+    var now by remember { mutableStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(5_000)
+            now = System.currentTimeMillis()
+        }
+    }
     Scaffold(topBar = { TopAppBar(title = { Text("T&H BLE") }) }) { padding ->
         Column(Modifier.padding(padding).fillMaxSize().padding(horizontal = 16.dp)) {
             Text(
@@ -71,7 +84,11 @@ fun MainScreen(
             }
             LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(devices, key = { it.id }) { device ->
-                    DeviceCard(device = device, state = sensorStates[device.id], onClick = { onOpenHistory(device) })
+                    DeviceCard(
+                        device = device,
+                        state = sensorStates[device.id]?.takeIf { now - it.last <= StaleAfterMs },
+                        onClick = { onOpenHistory(device) },
+                    )
                 }
             }
         }

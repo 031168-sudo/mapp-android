@@ -211,10 +211,6 @@ class MainActivity : ComponentActivity() {
         val xdata = record.getServiceData(Ble.XIAOMI_UUID)
         val mdata = record.getServiceData(Ble.MINEW_UUID)
         val edata = record.getServiceData(Ble.EDDYSTONE_UUID)
-        if (edata != null && edata.size >= 6 && Ble.u(edata, 0) == 0x20) {
-            val wd = deviceDb.find(Ble.WTS300_MAC)
-            if (wd != null && wd.type == "minew_wts300") d = wd
-        }
         if (xdata != null && Ble.isXiaomi(xdata)) {
             val embedded = Ble.xiaomiMac(xdata)
             val xd = embedded?.let { deviceDb.find(it) }

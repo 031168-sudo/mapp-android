@@ -4,8 +4,6 @@ import android.os.ParcelUuid
 import java.util.Locale
 
 object Ble {
-    const val MINEW_MAC = "78:05:41:06:91:BA"
-    const val WTS300_MAC = "78:05:41:01:E6:36"
     val MINEW_UUID: ParcelUuid = ParcelUuid.fromString("0000ffe1-0000-1000-8000-00805f9b34fb")
     val XIAOMI_UUID: ParcelUuid = ParcelUuid.fromString("0000fe95-0000-1000-8000-00805f9b34fb")
     val EDDYSTONE_UUID: ParcelUuid = ParcelUuid.fromString("0000feaa-0000-1000-8000-00805f9b34fb")
